@@ -11,11 +11,10 @@
 use Minishlink\WebPush\Subscription;
 use Minishlink\WebPush\SubscriptionInterface;
 use Minishlink\WebPush\WebPush;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 
-/**
- * @covers \Minishlink\WebPush\WebPush
- */
+#[CoversClass(WebPush::class)]
 final class WebPushTest extends PHPUnit\Framework\TestCase
 {
     private static array $endpoints;
@@ -26,9 +25,7 @@ final class WebPushTest extends PHPUnit\Framework\TestCase
     /** @var WebPush WebPush with correct api keys */
     private WebPush $webPush;
 
-    /**
-     * {@inheritdoc}
-     */
+    #[\Override]
     public static function setUpBeforeClass(): void
     {
         self::$endpoints = [
@@ -53,9 +50,7 @@ final class WebPushTest extends PHPUnit\Framework\TestCase
         }
     }
 
-    /**
-     * {@inheritdoc}
-     */
+    #[\Override]
     public function setUp(): void
     {
         if (!getenv('CI')) {
@@ -100,7 +95,7 @@ final class WebPushTest extends PHPUnit\Framework\TestCase
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_HTTPHEADER => [
                 'Content-Type: application/json',
-                'Content-Length: ' . strlen($subscriptionParameters),
+                'Content-Length: '.strlen($subscriptionParameters),
             ],
         ]);
 
@@ -108,7 +103,6 @@ final class WebPushTest extends PHPUnit\Framework\TestCase
 
         if (!$response) {
             $error = 'Curl error: n'.curl_errno($getSubscriptionCurl).' - '.curl_error($getSubscriptionCurl);
-            curl_close($getSubscriptionCurl);
             throw new RuntimeException($error);
         }
 
@@ -122,21 +116,19 @@ final class WebPushTest extends PHPUnit\Framework\TestCase
         self::$keys['standard'] = $keys->{'p256dh'};
     }
 
-    /**
-     * @throws ErrorException
-     */
     public static function notificationProvider(): array
     {
         self::setUpBeforeClass(); // dirty hack of PHPUnit limitation
 
         return [
-            [new Subscription(self::$endpoints['standard'] ?: '', self::$keys['standard'] ?: '', self::$tokens['standard'] ?: ''), '{"message":"Comment ça va ?","tag":"general"}'],
+            [
+                new Subscription(self::$endpoints['standard'] ?? '', self::$keys['standard'] ?? '', self::$tokens['standard'] ?? ''),
+                '{"message":"Comment ça va ?","tag":"general"}',
+            ],
         ];
     }
 
     /**
-     * @param SubscriptionInterface $subscription
-     * @param string                $payload
      * @throws ErrorException
      */
     #[dataProvider('notificationProvider')]
@@ -251,7 +243,7 @@ final class WebPushTest extends PHPUnit\Framework\TestCase
         $this->webPush->queueNotification($nonExistentSubscription, json_encode(['test' => 2], JSON_THROW_ON_ERROR));
         $this->webPush->queueNotification($nonExistentSubscription, json_encode(['test' => 3], JSON_THROW_ON_ERROR));
 
-        $callback = function ($report) {
+        $callback = function ($report): void {
             $this->assertFalse($report->isSuccess());
             $this->assertTrue($report->isSubscriptionExpired());
             $this->assertEquals(410, $report->getResponse()->getStatusCode());

@@ -10,7 +10,7 @@ This push message is then received by the browser, which can then create a notif
 
 ## Requirements
 
-PHP 8.1+ and the following extensions:
+PHP 8.2+ and the following extensions:
 
 - bcmath and/or gmp (optional but better for performance)
 - mbstring
@@ -25,6 +25,7 @@ There is no support and maintenance for older PHP versions, however you are free
 - PHP 7.2: `v6.x`
 - PHP 7.3 7.4: `v7.x`
 - PHP 8.0 / Openssl without elliptic curve support: `v8.x`
+- PHP 8.1: `v9.x`
 
 This README is only compatible with the latest version. Each version of the library has a git tag where the corresponding README can be read.
 
@@ -66,6 +67,7 @@ $notifications = [
                   'p256dh' => '(stringOf88Chars)',
                   'auth' => '(stringOf24Chars)'
               ],
+              // key 'contentEncoding' is optional and defaults to Subscription::defaultContentEncoding
           ]),
           'payload' => '{"message":"Hello World!"}',
     ], [
@@ -130,7 +132,12 @@ $report = $webPush->sendOneNotification(
 
 ### Authentication (VAPID)
 
-Browsers need to verify your identity. A standard called VAPID can authenticate you for all browsers. You'll need to create and provide a public and private key for your server. These keys must be safely stored and should not change.
+Browsers need to verify your identity. A standard called VAPID can authenticate you for all browsers based on [RFC8292](https://www.rfc-editor.org/rfc/rfc8292).
+You'll need to create and provide a public and private key for your server. These keys must be safely stored and should not change.
+
+According to the standard it is optional to provide contact details by the `subject` property.
+In practice all browsers require a valid `subject` which can contain an email address or an available https website. It should not change.
+Please note that browser manufacturers may use additional verification methods to prevent abuse of the push service.
 
 You can specify your authentication details when instantiating WebPush. The keys can be passed directly (recommended), or you can load a PEM file or its content:
 
@@ -142,18 +149,26 @@ use Minishlink\WebPush\WebPush;
 $endpoint = 'https://fcm.googleapis.com/fcm/send/abcdef...'; // Chrome
 
 $auth = [
-    'VAPID' => [
-        'subject' => 'mailto:me@website.com', // can be a mailto: or your website address
-        'publicKey' => '~88 chars', // (recommended) uncompressed public key P-256 encoded in Base64-URL
-        'privateKey' => '~44 chars', // (recommended) in fact the secret multiplier of the private key encoded in Base64-URL
-        'pemFile' => 'path/to/pem', // if you have a PEM file and can link to it on your filesystem
-        'pem' => 'pemFileContent', // if you have a PEM file and want to hardcode its content
+    'VAPID' => [ // Recommended.
+        'subject' => 'mailto:me@website.com', // Must be an email beginning with mailto: or available https website address.
+        'publicKey' => '~88 chars', // Uncompressed public key P-256 encoded in Base64-URL.
+        'privateKey' => '~44 chars', // In fact the secret multiplier of the private key encoded in Base64-URL.
+    ],
+    'VAPID' => [ // Alternative 1.
+        'subject' => 'mailto:me@website.com', // Must be an email beginning with mailto: or available https website address.
+        'pemFile' => 'path/to/pem', // If you have a PEM file and can link to it on your filesystem.
+    ],
+    'VAPID' => [ // Alternative 2.
+        'subject' => 'mailto:me@website.com', // Must be an email beginning with mailto: or available https website address.
+        'pem' => 'pemFileContent', // If you have a PEM file and want to hardcode its content.
     ],
 ];
 
 $webPush = new WebPush($auth);
 $webPush->queueNotification(...);
 ```
+
+#### Create VAPID keys
 
 In order to generate the uncompressed public and secret key, encoded in Base64, enter the following in your Linux bash:
 
@@ -202,6 +217,7 @@ $defaultOptions = [
     'urgency' => 'normal', // protocol defaults to "normal". (very-low, low, normal, or high)
     'topic' => 'newEvent', // not defined by default. Max. 32 characters from the URL or filename-safe Base64 characters sets
     'batchSize' => 200, // defaults to 1000
+    'contentType' => 'application/json', // defaults to "application/octet-stream"
 ];
 
 // for every notification
@@ -234,6 +250,11 @@ If you send tens of thousands notifications at a time, you may get memory overfl
 In order to fix this, WebPush sends notifications in batches. The default size is 1000. Depending on your server configuration (memory), you may want
 to decrease this number. Do this while instantiating WebPush or calling `setDefaultOptions`. Or, if you want to customize this for a specific flush, give
 it as a parameter : `$webPush->flush($batchSize)`.
+
+#### contentType
+
+Sets the "Content-Type" header for HTTP requests with a non-empty payload sent to the push service. 
+Especially newer [Declarative push messages](https://www.w3.org/TR/push-api/#declarative-push-message) require a specific JSON payload, so this should be set to "application/json" in such cases.
 
 ### Server errors
 

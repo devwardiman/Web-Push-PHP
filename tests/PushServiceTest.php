@@ -11,14 +11,15 @@
 use Minishlink\WebPush\MessageSentReport;
 use Minishlink\WebPush\Subscription;
 use Minishlink\WebPush\WebPush;
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Test with test server.
- * @coversNothing
  */
 #[group('online')]
+#[CoversNothing]
 final class PushServiceTest extends PHPUnit\Framework\TestCase
 {
     private static int    $timeout    = 30;
@@ -33,9 +34,7 @@ final class PushServiceTest extends PHPUnit\Framework\TestCase
     /** @var WebPush WebPush with correct api keys */
     private WebPush $webPush;
 
-    /**
-     * {@inheritdoc}
-     */
+    #[\Override]
     public static function setUpBeforeClass(): void
     {
         self::$testServiceUrl = 'http://localhost:'.self::$portNumber;
@@ -54,7 +53,7 @@ final class PushServiceTest extends PHPUnit\Framework\TestCase
     /**
      * Selenium tests are flakey so add retries.
      */
-    public function retryTest($retryCount, $test): void
+    public function retryTest(int $retryCount, callable $test): void
     {
         // just like above without checking the annotation
         for ($i = 0; $i < $retryCount; $i++) {
@@ -75,12 +74,12 @@ final class PushServiceTest extends PHPUnit\Framework\TestCase
      * Run integration tests with browsers
      */
     #[dataProvider('browserProvider')]
-    public function testBrowsers($browserId, $options): void
+    public function testBrowsers(string $browserId, array $options): void
     {
         $this->retryTest(2, $this->createClosureTest($browserId, $options));
     }
 
-    protected function createClosureTest($browserId, $options): callable
+    protected function createClosureTest(string $browserId, array $options): callable
     {
         return function () use ($browserId, $options): void {
             $this->webPush = new WebPush($options);
@@ -127,12 +126,11 @@ final class PushServiceTest extends PHPUnit\Framework\TestCase
 
                 $subscription = new Subscription($endpoint, $p256dh, $auth, $contentEncoding);
                 $report = $this->webPush->sendOneNotification($subscription, $payload);
-                $this->assertInstanceOf(MessageSentReport::class, $report);
                 $this->assertTrue($report->isSuccess());
 
                 $dataString = json_encode([
-                                              'clientHash' => $clientHash,
-                                          ], JSON_THROW_ON_ERROR);
+                    'clientHash' => $clientHash,
+                ], JSON_THROW_ON_ERROR);
 
                 $getNotificationCurl = curl_init(self::$testServiceUrl.'/get-notifications');
                 curl_setopt_array($getNotificationCurl, [
@@ -159,13 +157,12 @@ final class PushServiceTest extends PHPUnit\Framework\TestCase
         };
     }
 
-    private function getResponse($ch)
+    private function getResponse(CurlHandle $ch): mixed
     {
         $resp = curl_exec($ch);
 
         if (!$resp) {
             $error = 'Curl error: n'.curl_errno($ch).' - '.curl_error($ch);
-            curl_close($ch);
             throw new RuntimeException($error);
         }
 
@@ -174,9 +171,6 @@ final class PushServiceTest extends PHPUnit\Framework\TestCase
         if (!property_exists($parsedResp, 'data')) {
             throw new RuntimeException('web-push-testing-service error: '.$resp);
         }
-
-        // Close request to clear up some resources
-        curl_close($ch);
 
         return $parsedResp;
     }

@@ -1,7 +1,4 @@
-<?php
-
-declare(strict_types=1);
-
+<?php declare(strict_types=1);
 /*
  * This file is part of the WebPush library.
  *
@@ -13,8 +10,8 @@ declare(strict_types=1);
 
 namespace Minishlink\WebPush;
 
-use Base64Url\Base64Url;
 use Jose\Component\Core\JWK;
+use Jose\Component\Core\Util\Base64UrlSafe;
 use Jose\Component\Core\Util\Ecc\PublicKey;
 
 class Utils
@@ -37,8 +34,8 @@ class Utils
     public static function serializePublicKeyFromJWK(JWK $jwk): string
     {
         $hexString = '04';
-        $hexString .= str_pad(bin2hex(Base64Url::decode($jwk->get('x'))), 64, '0', STR_PAD_LEFT);
-        $hexString .= str_pad(bin2hex(Base64Url::decode($jwk->get('y'))), 64, '0', STR_PAD_LEFT);
+        $hexString .= str_pad(bin2hex(Base64UrlSafe::decode($jwk->get('x'))), 64, '0', STR_PAD_LEFT);
+        $hexString .= str_pad(bin2hex(Base64UrlSafe::decode($jwk->get('y'))), 64, '0', STR_PAD_LEFT);
 
         return $hexString;
     }
@@ -75,15 +72,15 @@ class Utils
             'mbstring' => '[WebPush] mbstring extension is not loaded but is required for sending push notifications with payload or for VAPID authentication. You can fix this in your php.ini.',
             'openssl'  => '[WebPush] openssl extension is not loaded but is required for sending push notifications with payload or for VAPID authentication. You can fix this in your php.ini.',
         ];
-        foreach($requiredExtensions as $extension => $message) {
-            if(!extension_loaded($extension)) {
+        foreach ($requiredExtensions as $extension => $message) {
+            if (!extension_loaded($extension)) {
                 trigger_error($message, E_USER_WARNING);
             }
         }
 
         // Check optional extensions.
-        if(!extension_loaded("bcmath") && !extension_loaded("gmp")) {
-            trigger_error("It is highly recommended to install the GMP or BCMath extension to speed up calculations. The fastest available calculator implementation will be automatically selected at runtime.", E_USER_NOTICE);
+        if (!extension_loaded('bcmath') && !extension_loaded('gmp')) {
+            trigger_error('It is highly recommended to install the GMP or BCMath extension to speed up calculations. The fastest available calculator implementation will be automatically selected at runtime.', E_USER_NOTICE);
         }
     }
 
@@ -95,11 +92,11 @@ class Utils
             'prime256v1' => '[WebPush] Openssl does not support required curve prime256v1.',
         ];
         $availableCurves = openssl_get_curve_names();
-        if($availableCurves === false) {
+        if ($availableCurves === false) {
             trigger_error('[WebPush] Openssl does not support curves.', E_USER_WARNING);
         } else {
-            foreach($requiredCurves as $curve => $message) {
-                if(!in_array($curve, $availableCurves, true)) {
+            foreach ($requiredCurves as $curve => $message) {
+                if (!in_array($curve, $availableCurves, true)) {
                     trigger_error($message, E_USER_WARNING);
                 }
             }
@@ -110,8 +107,8 @@ class Utils
             'aes-128-gcm' => '[WebPush] Openssl does not support required cipher aes-128-gcm.',
         ];
         $availableCiphers = openssl_get_cipher_methods();
-        foreach($requiredCiphers as $cipher => $message) {
-            if(!in_array($cipher, $availableCiphers, true)) {
+        foreach ($requiredCiphers as $cipher => $message) {
+            if (!in_array($cipher, $availableCiphers, true)) {
                 trigger_error($message, E_USER_WARNING);
             }
         }
@@ -121,8 +118,8 @@ class Utils
             'sha256' => '[WebPush] Php does not support required hmac hash sha256.',
         ];
         $availableHash = hash_hmac_algos();
-        foreach($requiredHash as $hash => $message) {
-            if(!in_array($hash, $availableHash, true)) {
+        foreach ($requiredHash as $hash => $message) {
+            if (!in_array($hash, $availableHash, true)) {
                 trigger_error($message, E_USER_WARNING);
             }
         }

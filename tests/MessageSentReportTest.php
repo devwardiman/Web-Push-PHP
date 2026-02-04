@@ -1,18 +1,21 @@
 <?php declare(strict_types=1);
-/**
+/*
+ * This file is part of the WebPush library.
+ *
  * @author Igor Timoshenkov [it@campoint.net]
- * @started: 2018-12-03 11:31
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
  */
 
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
 use Minishlink\WebPush\MessageSentReport;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @covers \Minishlink\WebPush\MessageSentReport
- */
+#[CoversClass(MessageSentReport::class)]
 class MessageSentReportTest extends TestCase
 {
     #[dataProvider('generateReportsWithExpiration')]
