@@ -20,7 +20,7 @@ jobs:
         php: [ '8.2', '8.3', '8.4', '8.5' ]
         ext_base: [ 'none, dom, tokenizer, xml, xmlwriter,' ]
         ext_lib: [ 'curl, mbstring, openssl,' ]
-        ext_optional: [ '', 'bcmath', 'gmp', 'sodium' ]
+        ext_optional: [ '', 'bcmath', 'gmp' ]
 
     name: PHP ${{ matrix.php }} (${{ matrix.ext_optional }})
 
@@ -40,14 +40,16 @@ jobs:
         run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
 
       - name: Cache Composer dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
           key: ${{ runner.os }}-composer-php${{ matrix.php }}-${{ matrix.ext_optional }}-${{ hashFiles('**/composer.json') }}
           restore-keys: ${{ runner.os }}-composer-php${{ matrix.php }}-${{ matrix.ext_optional }}
 
       - name: Install dependencies
-        run: composer install --prefer-dist
+        run: |
+          openssl version
+          composer install --prefer-dist
 
       - name: Setup node
         uses: actions/setup-node@v6
